@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Smart खेती — Select Location</title>
+  <meta name="description" content="Smart Kheti — crop-stage AI advisory for Indian farms. Start by selecting your farm location." />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&family=Noto+Sans+Devanagari:wght@600;700&display=swap" rel="stylesheet">
+
+  <!-- Design system -->
+  <link rel="stylesheet" href="/frontend/assets/app.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Leaflet (allowed on index.html) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    /* Lobby hero */
+    .lobby-hero {
+      position: relative;
+      min-height: 92vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background: var(--brand);
+    }
+    .lobby-hero__bg {
+      position: absolute;
+      inset: 0;
+      background: url('/frontend/assets/img/hero.jpg') center/cover no-repeat;
+      opacity: .35;
+      filter: blur(1px);
+    }
+    .lobby-hero__content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      padding: 2rem 1.5rem;
+      max-width: 640px;
+    }
+    .lobby-hero__content h1 { color: #fff; }
+    .lobby-hero__content p  { color: rgba(255,255,255,.8); }
+
+    /* Map section */
+    #map { height: calc(100vh - 260px); min-height: 350px; border-radius: var(--r-card); }
+    @media (max-width: 639px) { #map { height: 55vh; } }
+
+    /* Smooth scroll anchor */
+    #location-picker { scroll-margin-top: 80px; }
+  </style>
+</head>
+
+<body class="bg-[--bg] text-[--text-900]">
+
+  <!-- ─── Lobby Hero ──────────────────────────────────────────── -->
+  <section class="lobby-hero" id="top">
+    <div class="lobby-hero__bg"></div>
+    <div class="lobby-hero__content reveal">
+      <div class="badge badge-brand mb-4 text-sm" style="background:rgba(255,255,255,.15);color:#fff;backdrop-filter:blur(6px);">
+        🌾 AI-powered crop advisory
+      </div>
+      <h1 class="display" style="font-size:clamp(36px,6vw,56px);line-height:1.15;">
+        Smart <span class="brand-hi">खेती</span>
+      </h1>
+      <p class="body-lg mt-4" style="max-width:480px;margin-inline:auto;">
+        Stage-aware intelligence for every Indian farm — weather, market prices, pest alerts, and AI chat in one place.
+      </p>
+      <div class="flex flex-wrap gap-3 justify-center mt-8">
+        <a href="#location-picker" class="btn btn-primary" style="font-size:16px;padding:.85rem 2rem;">
+          Get Started →
+        </a>
+        <a href="#features" class="btn btn-ghost" style="border-color:rgba(255,255,255,.3);color:#fff;">
+          Learn More
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Features Strip ──────────────────────────────────────── -->
+  <section id="features" class="py-16" style="background:var(--card);">
+    <div class="container">
+      <div class="text-center mb-10">
+        <h2 class="display text-brand">Why Smart <span class="brand-hi">खेती</span>?</h2>
+        <p class="text-muted mt-2">Everything your farm needs, in one app.</p>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 reveal-stagger">
+        <div class="neo p-5 reveal">
+          <div class="text-3xl mb-3">🌤️</div>
+          <h3 class="h3" style="font-size:18px;">Weather Sync</h3>
+          <p class="small text-muted mt-1">Real-time weather matched to your crop's growth stage.</p>
+        </div>
+        <div class="neo p-5 reveal">
+          <div class="text-3xl mb-3">📊</div>
+          <h3 class="h3" style="font-size:18px;">Market Prices</h3>
+          <p class="small text-muted mt-1">Mandi prices, MSP data, and AI sell-timing advice.</p>
+        </div>
+        <div class="neo p-5 reveal">
+          <div class="text-3xl mb-3">🤖</div>
+          <h3 class="h3" style="font-size:18px;">AI Chat</h3>
+          <p class="small text-muted mt-1">Ask anything about your crop in English or Hinglish.</p>
+        </div>
+        <div class="neo p-5 reveal">
+          <div class="text-3xl mb-3">🍃</div>
+          <h3 class="h3" style="font-size:18px;">Plant Health</h3>
+          <p class="small text-muted mt-1">Upload a leaf photo — get instant disease diagnosis.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Location Picker ─────────────────────────────────────── -->
+  <section id="location-picker" class="py-12">
+    <div class="container">
+      <div class="card neo p-6 lg:p-8 reveal">
+        <div class="caption font-bold tracking-widest text-brand/70 uppercase">Step 1 of 2</div>
+        <h2 class="display text-brand mt-1" style="font-size:28px;">Choose your farm location</h2>
+        <p class="small text-muted mt-1">Search your village, city, or pincode and confirm on the map.</p>
+
+        <div class="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <!-- Left panel -->
+          <div class="lg:col-span-1 space-y-4">
+            <div>
+              <label class="caption font-bold text-[--text-500]">Search location</label>
+              <input id="q" class="mt-1 w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[--brand]/20"
+                     placeholder="Type village / city / pincode"
+                     autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" name="farm_location_search" />
+            </div>
+
+            <div id="results" class="bg-white border rounded-2xl overflow-hidden hidden shadow-md"></div>
+
+            <div class="neo p-4">
+              <div class="caption font-bold text-[--text-500] tracking-wider">SELECTED</div>
+              <div class="mt-2 text-sm font-semibold" id="selName">None</div>
+              <div class="mt-1 caption text-[--text-500]" id="selLatLng">--</div>
+            </div>
+
+            <button id="confirmBtn"
+                    class="btn btn-primary w-full" style="padding:.85rem 1.5rem;"
+                    disabled>
+              Confirm Location →
+            </button>
+
+            <div id="status" class="small text-muted"></div>
+          </div>
+
+          <!-- Map -->
+          <div class="lg:col-span-2">
+            <div id="map"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Runtime -->
+  <script src="/frontend/assets/app.js"></script>
+
+<script>
+  const el = (id) => document.getElementById(id);
+
+  let map, marker = null;
+  let selected = null;
+
+const FORCE_RESET = new URLSearchParams(window.location.search).get("force") === "1";
+async function maybeForceReset() {
+  if (!FORCE_RESET) return;
+  try { await fetch("/api/onboarding/reset", { method: "POST" }); } catch (e) {}
+  try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+}async function checkExisting() {
+    await maybeForceReset();
+    try {
+      const r = await fetch("/api/onboarding/profile");
+      const j = await r.json();
+      if (j && j.complete === true) {
+        // location.href = "/frontend/dashboard.html";  // disabled auto-redirect
+      }
+    } catch (e) {
+      console.log("Profile check failed (ok in dev):", e);
+    }
+  }
+
+  function initMap() {
+    map = L.map("map").setView([22.5, 79.0], 5);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "OpenStreetMap"
+    }).addTo(map);
+
+    map.on("click", async (e) => {
+      const { lat, lng } = e.latlng;
+      setSelected({ location_name: "Selected Point", lat, lng }, true);
+    });
+  }
+
+  function setSelected(obj, reverseName) {
+    selected = obj;
+    el("selName").textContent = obj.location_name || "Selected";
+    el("selLatLng").textContent = `Lat ${obj.lat.toFixed(5)}, Lng ${obj.lng.toFixed(5)}`;
+    el("confirmBtn").disabled = false;
+
+    if (marker) marker.remove();
+    marker = L.marker([obj.lat, obj.lng]).addTo(map);
+    map.setView([obj.lat, obj.lng], 13);
+  }
+
+  let timer = null;
+  async function doSearch(q) {
+    if (!q || q.trim().length < 3) {
+      el("results").classList.add("hidden");
+      el("results").innerHTML = "";
+      return;
+    }
+
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=6`;
+    const r = await fetch(url);
+    const data = await r.json();
+
+    const host = el("results");
+    host.innerHTML = "";
+    host.classList.remove("hidden");
+
+    data.forEach(item => {
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "w-full text-left px-4 py-3 border-b hover:bg-[--bg] transition-colors";
+      row.innerHTML = `<div class="text-sm font-semibold">${item.display_name}</div>
+                       <div class="caption text-[--text-500]">Lat ${Number(item.lat).toFixed(5)}, Lng ${Number(item.lon).toFixed(5)}</div>`;
+      row.onclick = () => {
+        host.classList.add("hidden");
+        setSelected({ location_name: item.display_name, lat: Number(item.lat), lng: Number(item.lon) }, false);
+      };
+      host.appendChild(row);
+    });
+
+    if (!data.length) {
+      host.innerHTML = `<div class="px-4 py-3 small text-muted">No results found.</div>`;
+    }
+  }
+
+  el("q").addEventListener("input", (e) => {
+    const q = e.target.value;
+    clearTimeout(timer);
+    timer = setTimeout(() => doSearch(q), 450);
+  });
+
+  el("confirmBtn").onclick = async () => {
+    if (!selected) return;
+    el("status").textContent = "Saving location...";
+    el("confirmBtn").disabled = true;
+
+    try {
+      const r = await fetch("/api/onboarding/location", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          location_name: selected.location_name,
+          lat: selected.lat,
+          lng: selected.lng
+        })
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.detail || "Failed to save location");
+
+      showToast('Location saved! Continuing…', 'ok');
+      setTimeout(() => { location.href = "/frontend/onboarding.html"; }, 600);
+    } catch (e) {
+      console.error(e);
+      showToast('Error saving location. Try again.', 'err');
+      el("status").textContent = "";
+      el("confirmBtn").disabled = false;
+    }
+  };
+
+  checkExisting();
+  initMap();
+</script>
+</body>
+</html>

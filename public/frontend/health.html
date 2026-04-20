@@ -1,0 +1,226 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smart खेती — Plant Health</title>
+  <link rel="preload" as="font" href="/frontend/assets/fonts/Praktikal-Variable.woff2" type="font/woff2" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@600;700&family=Noto+Sans+Devanagari:wght@700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/frontend/assets/app.css" />
+  <link rel="icon" href="/frontend/assets/img/favicon.svg" type="image/svg+xml" />
+  <style>
+    .brand-hi{ font-family:"Noto Sans Devanagari","Inter",system-ui,sans-serif; font-weight:700; }
+    .thumb{ width:72px; height:72px; border-radius:14px; object-fit:cover; border:1px solid rgba(16,44,28,.10); }
+  </style>
+</head>
+<body class="bg-[var(--bg)]">
+  <!-- Top app bar -->
+  <nav class="w-full bg-[var(--brand)] text-white sticky top-0 z-40">
+    <div class="container flex items-center justify-between py-3">
+      <a href="/frontend/lobby.html" class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-xl bg-white/10 grid place-items-center"><span class="font-bold">SK</span></div>
+        <div class="display text-xl">Smart <span class="brand-hi">खेती</span></div>
+      </a>
+      <div class="flex items-center gap-3 text-sm">
+        <span class="px-3 py-1 rounded-full bg-white/10">AI Diagnosis</span>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container px-4 py-6 space-y-6">
+    <section class="card neo p-5 hover-pop">
+      <div class="text-xs tracking-wider text-[var(--text-500)]">AI DIAGNOSIS</div>
+      <h1 class="display text-4xl mt-2">Plant Health</h1>
+      <p class="text-[var(--text-700)] mt-1">Upload a clear close‑up leaf photo. We’ll detect disease/pest risk and suggest actions.</p>
+    </section>
+
+    <section class="card neo p-5 hover-pop">
+      <div class="display text-xl">Upload Leaf Photo</div>
+
+      <div id="drop" class="mt-4 border border-emerald-900/15 rounded-2xl p-6 bg-white/60">
+        <div class="flex flex-col items-center text-center gap-2">
+          <div class="text-3xl">📷</div>
+          <div class="font-semibold text-[var(--text-900)]">Click or drag photo here</div>
+          <div class="text-sm text-[var(--text-500)]">Good light, single leaf, close‑up</div>
+          <input id="file" type="file" accept="image/*" class="mt-3 block w-full text-sm" />
+        </div>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+        <div class="card p-4">
+          <div class="text-xs text-[var(--text-500)]">PREVIEW</div>
+          <img id="preview" class="mt-2 rounded-2xl hidden" alt="Preview" />
+          <div id="noPrev" class="text-sm text-[var(--text-500)] mt-2">No image selected.</div>
+        </div>
+
+        <div class="md:col-span-2 card p-4">
+          <div class="flex items-center justify-between">
+            <div class="text-xs tracking-wider text-[var(--text-500)]">RESULT</div>
+            <span id="sev" class="badge">—</span>
+          </div>
+          <div class="display text-2xl mt-2" id="diag">Upload an image to analyze</div>
+          <div class="text-[var(--text-700)] mt-2" id="conf"></div>
+          <ul class="mt-3 list-disc pl-5 text-[var(--text-700)]" id="actions"></ul>
+
+          <button id="analyze" class="btn btn-primary mt-4 w-full">Analyze Photo</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card neo p-5 hover-pop">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-xs tracking-wider text-[var(--text-500)]">PAST SCANS</div>
+          <div class="display text-xl mt-1">History</div>
+        </div>
+        <button id="refresh" class="px-3 py-2 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-900">Refresh</button>
+      </div>
+
+      <div id="history" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div class="skeleton h-24"></div>
+        <div class="skeleton h-24"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom nav -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-[var(--brand)] text-white py-2">
+    <div class="container flex items-center justify-around text-xs">
+      <a data-nav="dashboard" href="/frontend/dashboard.html" class="px-3 py-2 rounded-full">HOME</a>
+      <a data-nav="market" href="/frontend/market.html" class="px-3 py-2 rounded-full">MARKET</a>
+      <a data-nav="chat" href="/frontend/chat.html" class="px-3 py-2 rounded-full">CHAT</a>
+      <a data-nav="health" href="/frontend/health.html" class="px-3 py-2 rounded-full">HEALTH</a>
+    </div>
+  </nav>
+
+  <footer id="global-footer" class="mt-10 mb-24">
+    <div class="container">
+      <div class="card neo p-6 md:p-8">
+        <div class="display text-xl">Smart <span class="brand-hi">खेती</span></div>
+        <p class="text-sm text-[var(--text-500)] mt-1">Crop‑stage AI for Indian farms</p>
+      </div>
+    </div>
+  </footer>
+
+  <script defer src="/frontend/assets/app.js"></script>
+  <script>
+  (function(){
+    const q = (s, el=document) => el.querySelector(s);
+    const fetchJSON = (u,o) => fetch(u,o).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); });
+
+    let selectedFile = null;
+
+    function sevBadge(sev){
+      const el = q("#sev");
+      el.textContent = sev || "—";
+      el.className = "badge " + (sev==="severe" || sev==="high" ? "badge-warn" : (sev==="moderate" ? "badge-warn" : "badge-ok"));
+    }
+
+    function showResult(res){
+      q("#diag").textContent = res.diagnosis || "—";
+      q("#conf").textContent = res.confidence != null ? ("Confidence: " + Math.round(res.confidence*100) + "%") : "";
+      sevBadge(res.severity);
+      const ul = q("#actions"); ul.innerHTML = "";
+      (res.actions || []).forEach(a=>{
+        const li = document.createElement("li");
+        li.textContent = a;
+        ul.appendChild(li);
+      });
+    }
+
+    function renderHistory(payload){
+      const wrap = q("#history");
+      wrap.innerHTML = "";
+      const items = payload.items || payload.checks || [];
+      if(!items.length){
+        wrap.innerHTML = '<div class="p-3 text-sm text-[var(--text-500)]">No history yet.</div>';
+        return;
+      }
+      items.slice(0,10).forEach(it=>{
+        const row = document.createElement("div");
+        row.className = "card p-4 hover-pop flex gap-3 items-start";
+        const imgSrc = it.image_path ? it.image_path : "";
+        row.innerHTML =
+          '<img class="thumb" src="'+imgSrc+'" alt="scan"/>' +
+          '<div class="min-w-0">' +
+            '<div class="text-xs text-[var(--text-500)]">'+(it.timestamp || "")+'</div>' +
+            '<div class="font-semibold text-[var(--text-900)] break-words mt-1">'+(it.diagnosis || "—")+'</div>' +
+            '<div class="text-sm text-[var(--text-500)] mt-1">Severity: '+(it.severity || "—")+'</div>' +
+          '</div>';
+        wrap.appendChild(row);
+      });
+    }
+
+    async function loadHistory(){
+      const payload = await fetchJSON("/api/health/history");
+      renderHistory(payload);
+    }
+
+    async function analyze(){
+      if(!selectedFile){
+        showToast && showToast("Please select an image first");
+        return;
+      }
+      const fd = new FormData();
+      fd.append("image", selectedFile, selectedFile.name);
+
+      q("#diag").textContent = "Analyzing…";
+      q("#conf").textContent = "";
+      q("#actions").innerHTML = "";
+      sevBadge("—");
+
+      const res = await fetch("/api/health/analyze", { method:"POST", body: fd });
+      if(!res.ok){
+        const t = await res.text();
+        throw new Error(t || res.status);
+      }
+      const json = await res.json();
+      showResult(json);
+      showToast && showToast("Analysis complete");
+      await loadHistory();
+    }
+
+    function wireUpload(){
+      const input = q("#file");
+      const prev = q("#preview");
+      const noPrev = q("#noPrev");
+
+      input.addEventListener("change", ()=>{
+        selectedFile = input.files && input.files[0] ? input.files[0] : null;
+        if(!selectedFile){
+          prev.classList.add("hidden"); noPrev.style.display = "block";
+          return;
+        }
+        prev.src = URL.createObjectURL(selectedFile);
+        prev.classList.remove("hidden");
+        noPrev.style.display = "none";
+      });
+
+      const drop = q("#drop");
+      drop.addEventListener("dragover", (e)=>{ e.preventDefault(); drop.classList.add("bg-emerald-50"); });
+      drop.addEventListener("dragleave", ()=> drop.classList.remove("bg-emerald-50"));
+      drop.addEventListener("drop", (e)=>{
+        e.preventDefault(); drop.classList.remove("bg-emerald-50");
+        const f = e.dataTransfer.files && e.dataTransfer.files[0];
+        if(!f) return;
+        selectedFile = f;
+        input.files = e.dataTransfer.files;
+        prev.src = URL.createObjectURL(selectedFile);
+        prev.classList.remove("hidden");
+        noPrev.style.display = "none";
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", async ()=>{
+      try{ setActiveNav && setActiveNav("health"); }catch(e){}
+      wireUpload();
+      q("#analyze").addEventListener("click", ()=> analyze().catch(err => { showToast && showToast("Analyze failed"); console.error(err); }));
+      q("#refresh").addEventListener("click", ()=> loadHistory().catch(console.error));
+      await loadHistory();
+    });
+  })();
+  </script>
+</body>
+</html>

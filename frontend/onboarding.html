@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Smart खेती — Farm Setup</title>
+  <meta name="description" content="Set up your crop details — select crop type, sowing date, farm size, and irrigation to get personalised advisories." />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&family=Noto+Sans+Devanagari:wght@600;700&display=swap" rel="stylesheet">
+
+  <!-- Design system -->
+  <link rel="stylesheet" href="/frontend/assets/app.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    .cropBtn {
+      border: 1.5px solid rgba(26,77,46,.12);
+      border-radius: var(--r-card);
+      padding: 1.1rem 1.2rem;
+      background: var(--card);
+      text-align: left;
+      cursor: pointer;
+      transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur-fast) var(--ease);
+      box-shadow: var(--shadow-sm);
+    }
+    .cropBtn:hover { box-shadow: var(--shadow-md); }
+    .cropBtn.active {
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(26,77,46,.12), var(--shadow-md);
+    }
+    .cropBtn:active { transform: scale(.98); }
+
+    .input {
+      width: 100%;
+      border: 1.5px solid rgba(26,77,46,.14);
+      border-radius: 12px;
+      padding: 11px 14px;
+      font-size: 14px;
+      background: var(--card);
+      color: var(--text-900);
+      transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+    }
+    .input:focus {
+      outline: none;
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(26,77,46,.10);
+    }
+  </style>
+</head>
+
+<body class="bg-[--bg] text-[--text-900]">
+
+  <!-- ─── Top Bar ─────────────────────────────────────────────── -->
+  <header class="top-bar">
+    <div class="top-bar__inner">
+      <div class="brand-mark">Smart <span class="brand-hi">खेती</span></div>
+      <div class="badge" style="background:rgba(255,255,255,.12);color:rgba(255,255,255,.85);margin-left:auto;">Step 2 of 2</div>
+    </div>
+  </header>
+
+  <!-- ─── Main ────────────────────────────────────────────────── -->
+  <main class="container py-8" style="max-width:720px;">
+    <div class="card neo p-6 reveal">
+      <div class="caption font-bold tracking-widest text-brand/70 uppercase">Farm Setup</div>
+      <h1 class="display text-brand mt-1" style="font-size:28px;">Crop details</h1>
+      <p class="small text-muted mt-1">Select your crop and fill in the details to get personalised advisories.</p>
+
+      <!-- Location summary -->
+      <div class="neo p-4 mt-5">
+        <div class="caption font-bold text-[--text-500] tracking-wider">LOCATION</div>
+        <div class="mt-1 text-sm font-semibold" id="locName">Loading...</div>
+        <div class="mt-2">
+          <a class="small text-brand font-semibold underline underline-offset-2" href="/">← Change location</a>
+        </div>
+      </div>
+
+      <!-- Crop selection -->
+      <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-3 reveal-stagger">
+        <button id="cropWheat" class="cropBtn reveal" type="button">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">🌾</span>
+            <div>
+              <div class="text-sm font-bold text-[--text-900]">Wheat</div>
+              <div class="caption text-[--text-500]">Rabi crop</div>
+            </div>
+          </div>
+        </button>
+        <button id="cropPaddy" class="cropBtn reveal" type="button">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">🌿</span>
+            <div>
+              <div class="text-sm font-bold text-[--text-900]">Paddy (Rice)</div>
+              <div class="caption text-[--text-500]">Kharif crop</div>
+            </div>
+          </div>
+        </button>
+      </div>
+
+      <!-- Form fields -->
+      <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="reveal">
+          <label class="caption font-bold text-[--text-500]">Sowing date</label>
+          <input id="sowingDate" class="input mt-1" type="date" />
+        </div>
+
+        <div class="reveal">
+          <label class="caption font-bold text-[--text-500]">Farm size (acres)</label>
+          <input id="farmSize" class="input mt-1" type="number" min="0.1" step="0.1" placeholder="e.g. 2.5" />
+        </div>
+
+        <div class="md:col-span-2 reveal">
+          <label class="caption font-bold text-[--text-500]">Irrigation</label>
+          <select id="irrigation" class="input mt-1">
+            <option value="1">Yes — full irrigation</option>
+            <option value="2">Partial</option>
+            <option value="0">Rainfed only</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div id="err" class="alert-row alert-err mt-4 hidden">
+        <span>⚠</span>
+        <span id="errMsg"></span>
+      </div>
+
+      <!-- Submit -->
+      <button id="saveBtn" class="btn btn-primary w-full mt-5" style="padding:.85rem 1.5rem;" type="button">
+        Continue to Dashboard →
+      </button>
+    </div>
+  </main>
+
+  <!-- Runtime -->
+  <script src="/frontend/assets/app.js"></script>
+
+<script>
+  const el = (id) => document.getElementById(id);
+  let profile = null;
+  let crop = null;
+
+  function setCrop(c) {
+    crop = c;
+    el("cropWheat").classList.toggle("active", c === "wheat");
+    el("cropPaddy").classList.toggle("active", c === "paddy");
+  }
+
+  el("cropWheat").onclick = () => setCrop("wheat");
+  el("cropPaddy").onclick = () => setCrop("paddy");
+
+  function showError(msg) {
+    el("errMsg").textContent = msg;
+    el("err").classList.remove("hidden");
+  }
+
+  async function init() {
+    const r = await fetch("/api/onboarding/profile");
+    const j = await r.json();
+
+    if (!j.exists || !j.profile || j.profile.lat == null || j.profile.lng == null) {
+      location.href = "/";
+      return;
+    }
+
+    profile = j.profile;
+    el("locName").textContent = profile.location_name || "Selected location";
+
+    // Prefill if exists
+    if (profile.crop) setCrop(profile.crop);
+    if (profile.sowing_date) el("sowingDate").value = profile.sowing_date;
+    if (profile.farm_size_acres) el("farmSize").value = profile.farm_size_acres;
+    if (profile.has_irrigation != null) el("irrigation").value = String(profile.has_irrigation);
+  }
+
+  el("saveBtn").onclick = async () => {
+    el("err").classList.add("hidden");
+
+    if (!profile) return showError("Location not loaded. Go back and select location.");
+    if (!crop) return showError("Please select a crop.");
+    const sowing_date = el("sowingDate").value;
+    if (!sowing_date) return showError("Please select sowing date.");
+    const farm_size_acres = parseFloat(el("farmSize").value);
+    if (!farm_size_acres || farm_size_acres <= 0) return showError("Enter valid farm size in acres.");
+    const has_irrigation = parseInt(el("irrigation").value, 10);
+
+    const payload = {
+      location_name: profile.location_name,
+      lat: profile.lat,
+      lng: profile.lng,
+      crop,
+      sowing_date,
+      has_irrigation,
+      farm_size_acres
+    };
+
+    localStorage.setItem("farm_lat", profile.lat);
+    localStorage.setItem("farm_lng", profile.lng);
+
+    try {
+      el("saveBtn").disabled = true;
+      el("saveBtn").textContent = "Saving...";
+
+      const rr = await fetch("/api/onboarding/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const jj = await rr.json();
+      if (!rr.ok) throw new Error(jj.detail || "Save failed");
+
+      showToast('Profile saved! Opening dashboard…', 'ok');
+      setTimeout(() => { location.href = "/frontend/dashboard.html"; }, 600);
+    } catch (e) {
+      console.error(e);
+      showError(String(e.message || e));
+    } finally {
+      el("saveBtn").disabled = false;
+      el("saveBtn").textContent = "Continue to Dashboard →";
+    }
+  };
+
+  init().catch(() => location.href = "/");
+</script>
+</body>
+</html>

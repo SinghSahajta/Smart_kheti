@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nearby Fertilizer Stores</title>
+
+  <link rel="stylesheet" href="assets/app.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    #storeMap {
+      height: 500px;
+      width: 100%;
+      border-radius: 12px;
+      margin-top: 20px;
+    }
+
+    .store-card {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .store-card h3 {
+      font-weight: 600;
+      font-size: 16px;
+      color: #2e7d32;
+      margin: 0 0 4px 0;
+    }
+
+    .store-card p {
+      margin: 0;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .directions-btn {
+      padding: 8px 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .directions-btn:hover {
+      background-color: #388e3c;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-bottom: 20px;
+      padding: 8px 18px;
+      background-color: #f0f0f0;
+      color: #333;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .back-btn:hover {
+      background-color: #e0e0e0;
+    }
+
+    #loading {
+      text-align: center;
+      padding: 40px;
+      font-size: 16px;
+      color: #666;
+    }
+
+    #no-results {
+      text-align: center;
+      padding: 40px;
+      font-size: 16px;
+      color: #999;
+      display: none;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50 text-gray-900 p-8">
+
+  <!-- Back Button -->
+  <a href="javascript:history.back()" class="back-btn">← Back</a>
+
+  <h1 class="text-2xl font-bold mb-2">
+    🏪 Nearby Fertilizer Stores
+  </h1>
+  <p id="subtitle" class="text-gray-500 mb-4 text-sm">
+    Searching within 50km of your farm location...
+  </p>
+
+  <div id="storeMap"></div>
+
+  <div id="loading" class="mt-6">
+    ⏳ Finding stores near you...
+  </div>
+
+  <div id="no-results">
+    😕 No fertilizer stores found within 50km.<br/>
+    <span style="font-size:13px;">Try checking a nearby town or city.</span>
+  </div>
+
+  <div id="store-list" class="mt-6"></div>
+
+  <script src="assets/fertilizerStores.js"></script>
+</body>
+</html>

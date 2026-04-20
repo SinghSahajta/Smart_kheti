@@ -1,0 +1,236 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smart खेती — Market</title>
+  <link rel="preload" as="font" href="/frontend/assets/fonts/Praktikal-Variable.woff2" type="font/woff2" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@600;700&family=Noto+Sans+Devanagari:wght@700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/frontend/assets/app.css" />
+  <link rel="icon" href="/frontend/assets/img/favicon.svg" type="image/svg+xml" />
+
+  <!-- Chart.js (only on market page) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    .brand-hi{ font-family:"Noto Sans Devanagari","Inter",system-ui,sans-serif; font-weight:700; }
+  </style>
+</head>
+<body class="bg-[var(--bg)]">
+  <!-- Top app bar -->
+  <nav class="w-full bg-[var(--brand)] text-white sticky top-0 z-40">
+    <div class="container flex items-center justify-between py-3">
+      <a href="/frontend/lobby.html" class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-xl bg-white/10 grid place-items-center"><span class="font-bold">SK</span></div>
+        <div class="display text-xl">Smart <span class="brand-hi">खेती</span></div>
+      </a>
+      <div class="flex items-center gap-3 text-sm">
+        <span id="cropPill" class="px-3 py-1 rounded-full bg-white/10">Crop: --</span>
+        <span id="modePill" class="px-3 py-1 rounded-full bg-white/10">Mode: --</span>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container px-4 py-6 space-y-6">
+    <div class="card neo p-5 hover-pop">
+      <div class="text-xs tracking-wider text-[var(--text-500)]">MANDI ANALYSIS</div>
+      <div class="flex items-end justify-between gap-4 mt-2">
+        <div>
+          <h1 class="display text-4xl">Market</h1>
+          <p class="text-[var(--text-700)] mt-1">AI-driven pricing signals based on your crop and local mandis.</p>
+        </div>
+        <div class="text-right">
+          <div class="text-xs text-[var(--text-500)]">Current Price</div>
+          <div class="display text-3xl">₹ <span id="curPrice">--</span></div>
+          <div class="text-xs text-[var(--text-500)]">per quintal</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Chart -->
+      <section class="card neo p-5 lg:col-span-2 hover-pop">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="display text-2xl">7‑Day Price Trend</div>
+            <div class="text-sm text-[var(--text-500)]">₹ per quintal</div>
+          </div>
+          <div class="badge badge-ok" id="recBadge">--</div>
+        </div>
+        <div class="mt-4">
+          <canvas id="chart" height="120"></canvas>
+        </div>
+      </section>
+
+      <!-- Side cards -->
+      <aside class="space-y-6">
+        <section class="card neo p-5 hover-pop">
+          <div class="text-xs tracking-wider text-[var(--text-500)]">TODAY'S VERDICT</div>
+          <div class="display text-2xl mt-2" id="verdict">Analyzing…</div>
+          <div class="text-sm text-[var(--text-700)] mt-2" id="sellWhen">--</div>
+        </section>
+
+        <section class="card neo p-5 hover-pop">
+          <div class="text-xs tracking-wider text-[var(--text-500)]">KEY RATES</div>
+          <div class="mt-3">
+            <div class="text-xs text-[var(--text-500)]">BEST MANDI</div>
+            <div class="display text-xl" id="bestMandiName">--</div>
+            <div class="display text-2xl mt-1">₹ <span id="bestMandiPrice">--</span></div>
+          </div>
+          <div class="h-px bg-emerald-900/10 my-4"></div>
+          <div>
+            <div class="text-xs text-[var(--text-500)]">MSP REFERENCE</div>
+            <div class="display text-xl">₹ <span id="msp">--</span></div>
+            <div class="text-sm text-[var(--text-500)] mt-1" id="mspNote">--</div>
+          </div>
+        </section>
+
+        <section class="card neo p-5 hover-pop">
+          <div class="text-xs tracking-wider text-[var(--text-500)]">SET PRICE ALERT</div>
+          <p class="text-sm text-[var(--text-700)] mt-2">Notify via toast when price crosses your threshold (demo).</p>
+          <label class="block text-xs text-[var(--text-500)] mt-3">Target Price (₹/qtl)</label>
+          <input id="target" class="w-full mt-1 px-4 py-3 rounded-xl border border-emerald-900/10 focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white" placeholder="e.g. 2500" />
+          <button id="saveAlert" class="btn btn-primary w-full mt-3">Save Alert</button>
+        </section>
+      </aside>
+    </div>
+
+    <section class="card neo p-5 hover-pop">
+      <div class="text-xs tracking-wider text-[var(--text-500)]">MANDI COMPARISON</div>
+      <div id="mandiList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
+        <div class="skeleton h-20"></div>
+        <div class="skeleton h-20"></div>
+        <div class="skeleton h-20"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom nav -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-[var(--brand)] text-white py-2">
+    <div class="container flex items-center justify-around text-xs">
+      <a data-nav="dashboard" href="/frontend/dashboard.html" class="px-3 py-2 rounded-full">HOME</a>
+      <a data-nav="market" href="/frontend/market.html" class="px-3 py-2 rounded-full">MARKET</a>
+      <a data-nav="chat" href="/frontend/chat.html" class="px-3 py-2 rounded-full">CHAT</a>
+      <a data-nav="health" href="/frontend/health.html" class="px-3 py-2 rounded-full">HEALTH</a>
+    </div>
+  </nav>
+
+  <footer id="global-footer" class="mt-10 mb-24">
+    <div class="container">
+      <div class="card neo p-6 md:p-8">
+        <div class="display text-xl">Smart <span class="brand-hi">खेती</span></div>
+        <p class="text-sm text-[var(--text-500)] mt-1">Crop‑stage AI for Indian farms</p>
+      </div>
+    </div>
+  </footer>
+
+  <script defer src="/frontend/assets/app.js"></script>
+  <script>
+  (function(){
+    const q = (s, el=document) => el.querySelector(s);
+    const fetchJSON = (u,o) => fetch(u,o).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); });
+
+    function setBadge(text){
+      const b = q("#recBadge");
+      b.textContent = text || "--";
+      b.className = "badge " + (/SELL/i.test(text) ? "badge-warn" : "badge-ok");
+    }
+
+    function buildSeries(data){
+      // Your backend currently returns history_7d: [{day_index, price}, ...]
+      if (Array.isArray(data.history_7d) && data.history_7d.length){
+        const labels = data.history_7d.map(x => "D" + (x.day_index ?? ""));
+        const prices = data.history_7d.map(x => Number(x.price ?? 0));
+        return { labels, prices };
+      }
+      // Fallback if you later switch to trend format
+      if (data.trend && Array.isArray(data.trend.dates)){
+        return { labels: data.trend.dates, prices: data.trend.prices || [] };
+      }
+      return { labels: [], prices: [] };
+    }
+
+    let chart;
+    function renderChart(labels, prices){
+      const ctx = q("#chart").getContext("2d");
+      if(chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "Price",
+            data: prices,
+            borderColor: "#1a4d2e",
+            backgroundColor: "rgba(26,77,46,0.12)",
+            fill: true,
+            tension: 0.35,
+            pointRadius: 3,
+            pointBackgroundColor: "#1a4d2e"
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false } },
+            y: { grid: { color: "rgba(16,44,28,0.08)" } }
+          }
+        }
+      });
+    }
+
+    function renderMandis(data){
+      const wrap = q("#mandiList");
+      wrap.innerHTML = "";
+      const mandis = data.mandis || [];
+      if(!mandis.length){
+        wrap.innerHTML = '<div class="p-3 text-sm text-[var(--text-500)]">No mandi data available.</div>';
+        return;
+      }
+      mandis.forEach(m=>{
+        const card = document.createElement("div");
+        card.className = "card p-4 hover-pop";
+        card.innerHTML =
+          '<div class="text-xs text-[var(--text-500)]">MANDI</div>'+
+          '<div class="display text-lg mt-1">'+(m.name||"--")+'</div>'+
+          '<div class="display text-2xl mt-1">₹ '+(m.price ?? "--")+'</div>';
+        wrap.appendChild(card);
+      });
+    }
+
+    async function init(){
+      try{ setActiveNav && setActiveNav("market"); }catch(e){}
+      q("#saveAlert").addEventListener("click", function(){
+        const v = q("#target").value.trim();
+        if(!v) { showToast && showToast("Enter a target price"); return; }
+        showToast && showToast("Saved price alert at ₹ " + v);
+      });
+
+      const data = await fetchJSON("/api/market/analysis");
+
+      q("#cropPill").textContent = "Crop: " + (data.crop || "--");
+      q("#modePill").textContent = "Mode: " + (data.mode || "demo");
+      q("#curPrice").textContent = data.current_price ?? "--";
+      q("#msp").textContent = data.msp_reference ?? data.msp ?? "--";
+      q("#mspNote").textContent = data.msp_note ?? "";
+      q("#verdict").textContent = data.recommendation ?? data.signal ?? "--";
+      q("#sellWhen").textContent = data.best_time_to_sell ?? "";
+      setBadge(data.recommendation ?? data.signal ?? "--");
+
+      const bm = data.best_mandi || {};
+      q("#bestMandiName").textContent = bm.name || "--";
+      q("#bestMandiPrice").textContent = bm.price ?? "--";
+
+      const series = buildSeries(data);
+      renderChart(series.labels, series.prices);
+      renderMandis(data);
+    }
+
+    document.addEventListener("DOMContentLoaded", init);
+  })();
+  </script>
+</body>
+</html>

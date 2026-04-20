@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smart खेती — Chat</title>
+  <link rel="preload" as="font" href="/frontend/assets/fonts/Praktikal-Variable.woff2" type="font/woff2" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@600;700&family=Noto+Sans+Devanagari:wght@700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/frontend/assets/app.css" />
+  <link rel="icon" href="/frontend/assets/img/favicon.svg" type="image/svg+xml" />
+  <style>
+    .brand-hi{ font-family:"Noto Sans Devanagari","Inter",system-ui,sans-serif; font-weight:700; }
+    .bubble{ max-width: 78ch; }
+    .bubble-user{ background: rgba(245,158,11,.18); border:1px solid rgba(245,158,11,.28); }
+    .bubble-bot{ background: rgba(26,77,46,.08); border:1px solid rgba(26,77,46,.14); }
+    .typing-dot{ width:7px; height:7px; border-radius:9999px; background:rgba(11,28,20,.35); animation: t 1s infinite ease-in-out; }
+    .typing-dot:nth-child(2){ animation-delay:.15s; }
+    .typing-dot:nth-child(3){ animation-delay:.3s; }
+    @keyframes t{ 0%,80%,100%{ transform:translateY(0); opacity:.4 } 40%{ transform:translateY(-4px); opacity:1 } }
+  </style>
+</head>
+<body class="bg-[var(--bg)]">
+  <!-- Top app bar -->
+  <nav class="w-full bg-[var(--brand)] text-white sticky top-0 z-40">
+    <div class="container flex items-center justify-between py-3">
+      <a href="/" class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-xl bg-white/10 grid place-items-center"><span class="font-bold">SK</span></div>
+        <div class="display text-xl">Smart <span class="brand-hi">खेती</span></div>
+      </a>
+      <div class="flex items-center gap-2 text-sm">
+        <span id="ctxPill" class="px-3 py-1 rounded-full bg-white/10">Loading context…</span>
+        <button id="clearBtn" class="px-3 py-1 rounded-full bg-white/10 hover:bg-white/15">Clear</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container px-4 py-6">
+    <section class="card neo p-5 hover-pop">
+      <div class="text-xs tracking-wider text-[var(--text-500)]">EXPERT ADVICE</div>
+      <h1 class="display text-4xl mt-2">Chat</h1>
+      <p class="text-[var(--text-700)] mt-1">Ask in English or Hinglish. We’ll answer using your crop, stage, weather and alerts.</p>
+
+      <div id="chatBox" class="mt-5 rounded-2xl border border-emerald-900/10 bg-white/70 overflow-hidden">
+        <div id="msgs" class="h-[52vh] md:h-[58vh] overflow-y-auto p-4 space-y-3"></div>
+
+        <div class="border-t border-emerald-900/10 p-3 bg-white">
+          <div class="flex gap-2">
+            <input id="inp" class="flex-1 px-4 py-3 rounded-xl border border-emerald-900/10 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              placeholder="e.g. Is it safe to irrigate today? (Hinglish ok)" />
+            <button id="send" class="btn btn-primary px-5">Send</button>
+          </div>
+
+          <div class="flex flex-wrap gap-2 mt-3">
+            <button class="px-3 py-2 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-xs" data-q="Is it safe to irrigate today?">Irrigate today?</button>
+            <button class="px-3 py-2 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-xs" data-q="What should I do this week?">This week plan</button>
+            <button class="px-3 py-2 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-xs" data-q="Any pest risk this week?">Pest risk</button>
+            <button class="px-3 py-2 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-xs" data-q="When should I harvest?">Harvest</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom nav -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-[var(--brand)] text-white py-2">
+    <div class="container flex items-center justify-around text-xs">
+      <a data-nav="dashboard" href="/frontend/dashboard.html" class="px-3 py-2 rounded-full">HOME</a>
+      <a data-nav="market" href="/frontend/market.html" class="px-3 py-2 rounded-full">MARKET</a>
+      <a data-nav="chat" href="/frontend/chat.html" class="px-3 py-2 rounded-full">CHAT</a>
+      <a data-nav="health" href="/frontend/health.html" class="px-3 py-2 rounded-full">HEALTH</a>
+    </div>
+  </nav>
+
+  <footer id="global-footer" class="mt-10 mb-24">
+    <div class="container">
+      <div class="card neo p-6 md:p-8">
+        <div class="display text-xl">Smart <span class="brand-hi">खेती</span></div>
+        <p class="text-sm text-[var(--text-500)] mt-1">Crop‑stage AI for Indian farms</p>
+      </div>
+    </div>
+  </footer>
+
+  <script defer src="/frontend/assets/app.js"></script>
+  <script>
+  (function(){
+    const q = (s, el=document) => el.querySelector(s);
+    const qa = (s, el=document) => Array.prototype.slice.call(el.querySelectorAll(s));
+    const fetchJSON = (u,o) => fetch(u,o).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); });
+
+    const msgs = q("#msgs");
+    const inp = q("#inp");
+
+    function esc(s){ return String(s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;"); }
+
+    function scrollDown(){
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function addBubble(role, text, ts){
+      const wrap = document.createElement("div");
+      wrap.className = role === "user" ? "flex justify-end" : "flex justify-start";
+      const bubble = document.createElement("div");
+      bubble.className = "bubble rounded-2xl px-4 py-3 text-sm leading-relaxed " + (role==="user" ? "bubble-user" : "bubble-bot");
+      bubble.innerHTML = '<div class="text-[var(--text-900)] whitespace-pre-wrap">'+esc(text)+'</div>' +
+                         (ts ? '<div class="text-xs text-[var(--text-500)] mt-1">'+esc(ts)+'</div>' : '');
+      wrap.appendChild(bubble);
+      msgs.appendChild(wrap);
+      scrollDown();
+    }
+
+    function addTyping(){
+      const wrap = document.createElement("div");
+      wrap.id = "typing";
+      wrap.className = "flex justify-start";
+      const b = document.createElement("div");
+      b.className = "bubble rounded-2xl px-4 py-3 bubble-bot";
+      b.innerHTML = '<div class="flex gap-2 items-center"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>';
+      wrap.appendChild(b);
+      msgs.appendChild(wrap);
+      scrollDown();
+    }
+    function removeTyping(){
+      const t = q("#typing");
+      if(t) t.remove();
+    }
+
+    async function loadContext(){
+      try{
+        const data = await fetchJSON("/api/dashboard/status");
+        const crop = (data.profile.crop||"").toUpperCase();
+        const stage = data.stage.stage_name || "--";
+        const loc = data.profile.location_name || "--";
+        q("#ctxPill").textContent = crop + " · " + stage + " · " + loc;
+      }catch(e){
+        q("#ctxPill").textContent = "Context unavailable";
+      }
+    }
+
+    async function loadHistory(){
+      msgs.innerHTML = "";
+      try{
+        const h = await fetchJSON("/api/chat/history");
+        const items = h.items || h.messages || [];
+        if(!items.length){
+          addBubble("assistant","Ask me about irrigation, pests, fertilizers, harvest, or mandi price trends.", "");
+          return;
+        }
+        items.forEach(m=>{
+          const role = (m.role === "assistant" || m.role === "user") ? m.role : (m.role || "assistant");
+          addBubble(role, m.message, m.timestamp);
+        });
+      }catch(e){
+        addBubble("assistant","Chat history not available. You can still ask a question below.", "");
+      }
+    }
+
+    async function send(){
+      const text = inp.value.trim();
+      if(!text) return;
+      inp.value = "";
+      addBubble("user", text, new Date().toLocaleTimeString());
+      addTyping();
+
+      try{
+        const res = await fetchJSON("/api/chat/message", {
+          method:"POST",
+          headers: { "Content-Type":"application/json" },
+          body: JSON.stringify({ message: text })
+        });
+        removeTyping();
+        addBubble("assistant", res.reply || "—", new Date().toLocaleTimeString());
+      }catch(e){
+        removeTyping();
+        addBubble("assistant", "Sorry—chat service failed. Try again.", new Date().toLocaleTimeString());
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", async ()=>{
+      try{ setActiveNav && setActiveNav("chat"); }catch(e){}
+      await loadContext();
+      await loadHistory();
+
+      q("#send").addEventListener("click", send);
+      inp.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); send(); } });
+
+      qa("[data-q]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{ inp.value = btn.getAttribute("data-q"); inp.focus(); });
+      });
+
+      q("#clearBtn").addEventListener("click", ()=>{
+        msgs.innerHTML = "";
+        addBubble("assistant","Cleared. Ask a new question anytime.", "");
+      });
+    });
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+import os
+from datetime import datetime
+from fastapi import APIRouter, File, UploadFile, HTTPException
+from backend.database import get_connection
+
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
+
+router = APIRouter(prefix="/api/health", tags=["health"])
+
+def _save_history(path: str, diagnosis: str, severity: str):
+    conn = get_connection()
+    try:
+        conn.execute("""
+            INSERT INTO health_checks (user_id, image_path, diagnosis, severity, timestamp)
+            VALUES (1, ?, ?, ?, ?)
+        """, (path.replace("\\", "/"), diagnosis, severity, datetime.utcnow().isoformat()))
+        conn.commit()
+    finally:
+        conn.close()
+
+def _get_history():
+    conn = get_connection()
+    try:
+        rows = conn.execute("""
+            SELECT id, user_id, image_path, diagnosis, severity, timestamp
+            FROM health_checks
+            WHERE user_id=1
+            ORDER BY id DESC
+            LIMIT 20
+        """).fetchall()
+        items = [dict(r) for r in rows]
+        return items
+    finally:
+        conn.close()
+
+@router.post("/analyze")
+async def analyze(image: UploadFile = File(...)):
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    # Accept even if content_type is octet-stream (some Windows curl)
+    if not image.filename:
+        raise HTTPException(status_code=400, detail="No file provided.")
+    # Persist uploaded file
+    ts = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+    safe_name = f"{ts}-{image.filename}".replace(" ", "_")
+    path = os.path.join(UPLOAD_DIR, safe_name)
+    with open(path, "wb") as f:
+        f.write(await image.read())
+
+    # Demo heuristic (no external model):
+    name_low = image.filename.lower()
+    diagnosis, severity, conf = "Leaf appears healthy", "mild", 0.78
+    if any(w in name_low for w in ["spot", "blight"]):
+        diagnosis, severity, conf = "Leaf spot (possible Alternaria/Cercospora)", "moderate", 0.86
+    elif any(w in name_low for w in ["rust", "yellow"]):
+        diagnosis, severity, conf = "Yellow rust (Puccinia striiformis)", "moderate", 0.83
+    elif any(w in name_low for w in ["hopper", "bph", "planthopper"]):
+        diagnosis, severity, conf = "Brown planthopper (BPH) signs", "severe", 0.81
+
+    diag_line = f"{diagnosis} (conf ~{int(conf*100)}%)"
+    _save_history(path, diag_line, severity)
+
+    return {
+        "ok": True,
+        "image_path": path.replace("\\", "/"),
+        "diagnosis": diagnosis,
+        "severity": severity,
+        "confidence": conf,
+        "actions": [
+            "Remove heavily affected leaves",
+            "Avoid overhead irrigation; water at base",
+            "If spread increases, consult local agri input dealer for recommended input"
+        ]
+    }
+
+@router.get("/history")
+def history():
+    items = _get_history()
+    # Backward-compat: provide both keys (old UI used `checks`)
+    return {"items": items, "checks": items}

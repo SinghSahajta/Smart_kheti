@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smart खेती — Dashboard</title>
+  <link rel="preload" as="font" href="/frontend/assets/fonts/Praktikal-Variable.woff2" type="font/woff2" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@600;700&family=Noto+Sans+Devanagari:wght@700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/frontend/assets/app.css" />
+  <link rel="icon" href="/frontend/assets/img/favicon.svg" type="image/svg+xml" />
+  <style>
+    .brand-hi{ font-family:"Noto Sans Devanagari","Inter",system-ui,sans-serif; font-weight:700; }
+    .ring { --p: 0; width: 140px; height: 140px; border-radius: 9999px;
+      background: conic-gradient(#16a34a var(--p), #e5efe9 0),
+                  radial-gradient(farthest-side, #fff 69%, transparent 70% 100%);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(70% - 1.5px), #000 calc(70% - 1.5px));
+              mask: radial-gradient(farthest-side, transparent calc(70% - 1.5px), #000 calc(70% - 1.5px));
+      display:grid; place-items:center;
+    }
+    .fore-card{ border-radius:14px; background:#fff; border:1px solid rgba(16,44,28,.08); box-shadow:var(--shadow-1); padding:.75rem .875rem; }
+    .fore-card .hi{ font-weight:700; color:var(--text-900); }
+    .fore-card .lo{ color:var(--text-500); }
+    .fore-card .rain{ font-size:12px; color:#065f2a; background:rgba(22,163,74,.12); padding:.15rem .45rem; border-radius:9999px; }
+
+    .moist-wrap{ display:grid; gap:.75rem; }
+    .moist-gauge{ height:10px; border-radius:9999px; background:linear-gradient(90deg,#dc2626 0%, #f59e0b 35%, #16a34a 70%, #2563eb 100%); position:relative; box-shadow:inset 0 0 0 1px rgba(16,44,28,.12);}
+    .moist-pointer{ position:absolute; top:50%; transform:translate(-50%,-50%); width:10px; height:18px; border-radius:6px; background:#0b1c14; box-shadow:0 1px 2px rgba(0,0,0,.25); left:var(--x,0%); }
+    .moist-legend{ display:flex; justify-content:space-between; font-size:12px; color:var(--text-500); }
+
+    /* hover pop and magenta accent (already added in app.css, here for safety) */
+    :root{ --magenta:#d946ef; }
+    .hover-pop{ position:relative; transition:transform .18s ease, box-shadow .18s ease; }
+    .hover-pop:hover{ transform:translateY(-2px) scale(1.01); box-shadow:0 16px 36px rgba(8,32,20,.16), inset 0 -1px 0 rgba(255,255,255,.6); }
+    .hover-pop::before{ content:""; position:absolute; left:0; top:10px; bottom:10px; width:0; background:var(--magenta); border-radius:6px; opacity:0; transition:width .18s ease, opacity .18s ease; }
+    .hover-pop:hover::before{ width:4px; opacity:1; }
+  </style>
+</head>
+<body class="bg-[var(--bg)]">
+  <!-- Top app bar -->
+  <nav class="w-full bg-[var(--brand)] text-white sticky top-0 z-40">
+    <div class="container flex items-center justify-between py-3">
+      <a href="/" class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-xl bg-white/10 grid place-items-center"><span class="font-bold">SK</span></div>
+        <div class="display text-xl">Smart <span class="brand-hi">खेती</span></div>
+      </a>
+      <div class="flex items-center gap-3 text-sm">
+        <span id="locPill" class="px-3 py-1 rounded-full bg-white/10">--</span>
+        <span id="lastAnalyzed" class="px-3 py-1 rounded-full bg-white/10">Last analyzed: --</span>
+        <button id="runBtn" class="btn btn-primary text-[var(--text-900)]">Run Analysis</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container px-4 py-6 space-y-6">
+    <!-- Agent log -->
+    <div id="agentLog" class="hidden card p-4">
+      <div class="font-semibold mb-2">Agent run</div>
+      <pre id="agentLogBody" class="text-sm text-[var(--text-700)]"></pre>
+    </div>
+
+    <!-- Row 1: Weather + Moisture -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <section class="card neo p-5 lg:col-span-2 hover-pop">
+        <div class="text-xs tracking-wider text-[var(--text-500)] mb-3">LIVE FARM WEATHER</div>
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="display text-5xl" id="temp">--</div>
+            <div class="text-[var(--text-700)] mt-2" id="weatherNote">Fetching local weather...</div>
+          </div>
+          <div class="text-5xl" id="wxIcon" aria-label="Weather">☀️</div>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mt-5">
+          <div class="card p-3 hover-pop">
+            <div class="text-xs text-[var(--text-500)]">HUMIDITY</div>
+            <div class="display text-2xl" id="hum">--%</div>
+          </div>
+          <div class="card p-3 hover-pop">
+            <div class="text-xs text-[var(--text-500)]">WIND</div>
+            <div class="display text-2xl"><span id="wind">--</span> km/h</div>
+          </div>
+          <div class="card p-3 hover-pop">
+            <div class="text-xs text-[var(--text-500)]">RAIN (6H)</div>
+            <div class="display text-2xl"><span id="rain6">--</span>%</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card neo p-5 hover-pop">
+        <div class="text-xs tracking-wider text-[var(--text-500)] mb-3">SOIL MOISTURE INDEX</div>
+        <div class="flex flex-col items-center gap-3">
+          <div class="ring" id="moistRing"><div class="display text-2xl" id="moistPct">--%</div></div>
+          <span class="badge" id="moistStatus">Analyzing</span>
+          <div class="moist-wrap w-full">
+            <div class="moist-gauge"><div class="moist-pointer" id="moistPtr" style="--x:0%"></div></div>
+            <div class="moist-legend"><span>Dry</span><span>Wet</span></div>
+            <div class="card p-3 w-full text-center hover-pop">
+              <div class="text-xs text-[var(--text-500)]">IRRIGATION NEEDED?</div>
+              <div class="display text-xl" id="needsIrr">--</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Row 2: 6-day forecast -->
+    <section class="card neo p-5 hover-pop">
+      <div class="text-xs tracking-wider text-[var(--text-500)] mb-3">6‑DAY FORECAST</div>
+      <div id="foreWrap" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div class="skeleton h-20"></div>
+        <div class="skeleton h-20"></div>
+        <div class="skeleton h-20"></div>
+        <div class="skeleton h-20"></div>
+        <div class="skeleton h-20"></div>
+        <div class="skeleton h-20"></div>
+      </div>
+    </section>
+
+    <!-- Row 3: Stage + Alerts -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <section class="card neo p-5 lg:col-span-2 hover-pop">
+        <div class="text-xs tracking-wider text-[var(--text-500)] mb-3">CROP STAGE</div>
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="display text-2xl" id="stageName">Loading Stage…</div>
+            <div class="text-[var(--text-700)] mt-1" id="stageDesc">Looking up crop cycle data based on sowing date.</div>
+          </div>
+          <div class="badge" id="stageEmoji">🌱</div>
+        </div>
+        <div class="mt-4">
+          <div class="flex justify-between text-sm text-[var(--text-500)]">
+            <span>Day <span id="daysIn">--</span></span>
+            <span>— <span id="daysLeft">--</span> days to next stage</span>
+          </div>
+          <div class="h-2 mt-2 rounded-full bg-emerald-100 overflow-hidden">
+            <div id="stageProg" class="h-full bg-[var(--brand)]" style="width:0%"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card neo p-5 hover-pop">
+        <div class="flex items-center justify-between">
+          <div class="text-xs tracking-wider text-[var(--text-500)]">ACTIVE ALERTS</div>
+          <span class="badge badge-warn" id="alertCount">0</span>
+        </div>
+        <div id="alertsList" class="mt-3 space-y-2">
+          <div class="skeleton h-16"></div>
+          <div class="skeleton h-16"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Bottom nav -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-[var(--brand)] text-white py-2">
+    <div class="container flex items-center justify-around text-xs">
+      <a data-nav="dashboard" href="/frontend/dashboard.html" class="px-3 py-2 rounded-full">HOME</a>
+      <a data-nav="market" href="/frontend/market.html" class="px-3 py-2 rounded-full">MARKET</a>
+      <a data-nav="chat" href="/frontend/chat.html" class="px-3 py-2 rounded-full">CHAT</a>
+      <a data-nav="health" href="/frontend/health.html" class="px-3 py-2 rounded-full">HEALTH</a>
+    </div>
+  </nav>
+
+  <!-- Footer -->
+  <footer id="global-footer" class="mt-8 mb-24">
+    <div class="container">
+      <div class="card neo p-6 md:p-8">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <div class="display text-xl">Smart <span class="brand-hi">खेती</span></div>
+            <p class="text-sm text-[var(--text-500)] mt-1">Crop‑stage AI for Indian farms</p>
+          </div>
+          <nav class="flex gap-4 text-sm text-[var(--text-700)]">
+            <a href="#" class="hover:underline">About</a>
+            <a href="#" class="hover:underline">Privacy</a>
+            <a href="#" class="hover:underline">Terms</a>
+            <a href="#" class="hover:underline">Contact</a>
+          </nav>
+        </div>
+        <div class="flex items-center justify-between mt-6 text-xs text-[var(--text-500)]">
+          <div>© <span id="yr">2026</span> Smart खेती</div>
+          <button id="toTop" class="px-3 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-900">Top ↑</button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script defer src="/frontend/assets/app.js"></script>
+  <script>
+  (function(){
+    const q = (s, el=document) => el.querySelector(s);
+    const fetchJSON = (u,o) => fetch(u,o).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); });
+
+    const DEG = "°";
+    const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : NaN; };
+    const fmtC = (v, dp=1) => { const n = num(v); return Number.isFinite(n) ? n.toFixed(dp) + DEG + "C" : "--"; };
+    const fmtDay = (d) => new Date(d + "T00:00:00").toLocaleDateString(undefined,{weekday:"short"});
+
+    function chooseIcon(ctx) {
+      const temp = num(ctx.temp), rainProb = num(ctx.rainProb), precip = num(ctx.precip), hum = num(ctx.humidity), wind = num(ctx.wind);
+      if ((precip||0) >= 1 || (rainProb||0) >= 60) return (wind||0) > 25 ? "⛈️" : "🌧️";
+      if ((rainProb||0) >= 30) return "🌦️";
+      if ((hum||50) < 40 && (rainProb||0) < 20 && (temp||28) >= 28) return "☀️";
+      if ((hum||60) <= 70 && (rainProb||0) < 20) return "🌤️";
+      return "☁️";
+    }
+
+    function agentLog(lines){
+      const w=q("#agentLog"), b=q("#agentLogBody"); w.classList.remove("hidden"); b.textContent="";
+      let i=0; const id=setInterval(()=>{ if(i>=lines.length){clearInterval(id);return;} b.textContent+="• "+lines[i++]+"\\n"; },220);
+      return ()=>clearInterval(id);
+    }
+
+    async function loadStatus(){
+      const data = await fetchJSON("/api/dashboard/status");
+
+      // Location
+      q("#locPill").textContent = (data && data.profile && data.profile.location_name) || "--";
+
+      // Current weather values
+      const t = data && data.weather && (data.weather.current && data.weather.current.temp_c || data.weather.current_temp || data.weather.temp);
+      const h = data && data.weather && (data.weather.current && data.weather.current.relative_humidity_2m || data.weather.humidity_percent || data.weather.humidity);
+      const w = data && data.weather && (data.weather.current && data.weather.current.wind_speed_10m || data.weather.wind_kmh || data.weather.wind);
+      const r6= data && data.weather && (data.weather.next_6h && data.weather.next_6h.rain_probability_max_percent || data.weather.rain_probability_6h || data.weather.rain6h);
+      const precip = data && data.weather && (data.weather.current && (data.weather.current.precipitation || data.weather.current.precip_mm)) || 0;
+
+      q("#temp").textContent = fmtC(t);
+      q("#hum").textContent  = (h==null? "--" : h + "%");
+      q("#wind").textContent = (w==null? "--" : w);
+      q("#rain6").textContent = (r6==null? "--" : r6);
+      q("#wxIcon").textContent = chooseIcon({ temp:t, rainProb:r6, precip:precip, humidity:h, wind:w });
+
+      // Forecast 6 days
+      const f = (data && data.weather && data.weather.forecast_daily) || {};
+      const days=(f.time||[]).slice(0,6);
+      const tmax=(f.temp_max_c||f.temperature_2m_max||[]).slice(0,6);
+      const tmin=(f.temp_min_c||f.temperature_2m_min||[]).slice(0,6);
+      const r   =(f.precip_prob_max_percent||f.precipitation_probability_max||[]).slice(0,6);
+
+      const wrap=q("#foreWrap"); wrap.innerHTML="";
+      days.forEach((d,i)=>{
+        const hi=fmtC(tmax[i],1), lo=fmtC(tmin[i],1), rp=(r[i]??0);
+        const html =
+          '<div class="text-xs text-[var(--text-500)]">'+fmtDay(d)+'</div>'+
+          '<div class="mt-1"><span class="hi">'+hi+'</span> <span class="lo ml-1">'+lo+'</span></div>'+
+          '<div class="mt-1"><span class="rain">Rain '+rp+'%</span></div>';
+        const c=document.createElement("div"); c.className="fore-card hover-pop"; c.innerHTML=html; wrap.appendChild(c);
+      });
+
+      // Stage
+      const st = data && data.stage || {};
+      q("#stageName").textContent = st.stage_name || "--";
+      q("#stageDesc").textContent = st.description || "";
+      q("#stageEmoji").textContent= st.emoji || "🌱";
+      q("#daysIn").textContent    = (st.days_in_stage!=null? st.days_in_stage : "--");
+      q("#daysLeft").textContent  = (st.days_remaining_in_stage!=null? st.days_remaining_in_stage : "--");
+      q("#stageProg").style.width = ((st.progress_percent||0)) + "%";
+
+      // Moisture
+      const m = data && data.moisture || {};
+      const pct = num(m.estimated_moisture_percent || 0);
+      q("#moistPct").textContent  = Number.isFinite(pct) ? pct.toFixed(1)+'%' : '--%';
+      q("#moistStatus").textContent = m.status || "—";
+      q("#needsIrr").textContent  = m.needs_irrigation ? "YES" : "NO";
+      // ring + pointer
+      const ring=q("#moistRing"); let p=0; const target=Number.isFinite(pct)?Math.max(0,Math.min(100,pct)):0;
+      const step=()=>{ p+=Math.max(2,(target-p)*0.15); ring.style.setProperty("--p",p+"%"); if(p<target-0.5) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+      q("#moistPtr").style.setProperty("--x", target+"%");
+    }
+
+    async function loadAlerts(){
+      const res=await fetchJSON("/api/alerts/active"); const list=q("#alertsList"); list.innerHTML="";
+      const items=(res && res.items) || []; q("#alertCount").textContent=items.length||0;
+      if(!items.length){ list.innerHTML='<div class="p-3 text-sm text-[var(--text-500)]">No active alerts.</div>'; return; }
+      items.forEach(a=>{
+        const badgeCls = a.severity==="CRITICAL" ? "badge badge-warn" : a.severity==="HIGH" ? "badge badge-warn" : "badge";
+        const html =
+          '<div class="flex items-start justify-between gap-3">'+
+            '<div class="min-w-0">'+
+              '<div class="flex items-center gap-2">'+
+                '<span class="'+badgeCls+'">'+(a.severity||"INFO")+'</span>'+
+                '<span class="text-xs text-[var(--text-500)]">'+(a.type||"GENERAL")+'</span>'+
+              '</div>'+
+              '<div class="mt-1 text-[var(--text-700)] break-words">'+(a.message||"")+'</div>'+
+              '<div class="text-xs text-[var(--text-500)] mt-1">'+(a.stage||"")+' · '+(a.timestamp||"")+'</div>'+
+            '</div>'+
+            '<button class="px-3 py-1 shrink-0 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-900" data-id="'+a.id+'">Dismiss</button>'+
+          '</div>';
+        const row=document.createElement("div"); row.className="card p-3 hover-pop"; row.innerHTML=html;
+        row.querySelector("button").addEventListener("click", async (e)=>{
+          const id=e.currentTarget.getAttribute("data-id");
+          try{ await fetchJSON("/api/alerts/dismiss/"+id,{method:"POST"}); row.remove(); loadAlerts(); showToast?.("Alert dismissed"); }
+          catch(_){ showToast?.("Dismiss failed"); }
+        });
+        list.appendChild(row);
+      });
+    }
+
+    async function runAnalysis(){
+      const w=q("#agentLog"),b=q("#agentLogBody"); w.classList.remove("hidden"); b.textContent="";
+      const lines=["Monitoring agent collecting data...","Weather data received","Moisture model running","Risk analysis…","Persisting alerts…","Refreshing dashboard…"];
+      let i=0; const id=setInterval(()=>{ if(i>=lines.length){clearInterval(id);return;} b.textContent+="• "+lines[i++]+"\\n"; },220);
+      try{ await fetchJSON("/api/alerts/generate",{method:"POST"}); await loadAlerts(); await loadStatus(); q("#lastAnalyzed").textContent="Last analyzed: "+new Date().toLocaleTimeString(); showToast?.("Analysis complete"); }
+      catch(_){ showToast?.("Analysis failed"); }
+      finally{ clearInterval(id); }
+    }
+
+    document.addEventListener("DOMContentLoaded", async ()=>{
+      try{ setActiveNav?.("dashboard"); }catch(_){}
+      q("#runBtn").addEventListener("click", runAnalysis);
+      await loadStatus();
+      await loadAlerts();
+      q("#lastAnalyzed").textContent="Last analyzed: just now";
+    });
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+﻿# Python
+__pycache__/
+*.pyc
+.venv/
+.venv*/
+venv/
+.env
+
+# Data / runtime
+data/
+uploads/
+*.db
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Large datasets/models (optional)
+datasets/
+models/
+training/
+
+# Backups
+*.bak
+*.bak2
+*.broken.bak
+*.indent_error.bak
+*.fixbak
